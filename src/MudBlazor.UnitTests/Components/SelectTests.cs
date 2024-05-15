@@ -26,7 +26,6 @@ namespace MudBlazor.UnitTests.Components
             var select = comp.FindComponent<MudSelect<string>>();
             await comp.InvokeAsync(() => select.Instance.HandleKeyDown(new KeyboardEventArgs() { Key = "Enter" }));
             await comp.InvokeAsync(() => select.SetParam("ListClass", "my-list-class"));
-            var list = comp.FindComponent<MudList<string>>();
             comp.WaitForAssertion(() => comp.Markup.Should().Contain("my-list-class"));
         }
 
@@ -519,7 +518,7 @@ namespace MudBlazor.UnitTests.Components
             items.Should().HaveCount(7);
             foreach (var item in items)
             {
-                item.Instance.IsSelected.Should().BeTrue();
+                item.Instance.Selected.Should().BeTrue();
                 item.FindComponent<MudListItem<string>>().Instance.Icon.Should().Be("<path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.1-.89-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z\"/>");
             }
 
@@ -1037,7 +1036,7 @@ namespace MudBlazor.UnitTests.Components
             var select = comp.FindComponent<MudSelect<string>>();
             var mudSelectElement = comp.Find(".mud-select");
             comp.Find("div.mud-input-control").Click();
-            select.Instance._isOpen.Should().BeTrue();
+            select.Instance._open.Should().BeTrue();
             var items = comp.FindAll("div.mud-list-item").ToArray();
             items[0].Click();
             items[2].Click();
@@ -1108,7 +1107,6 @@ namespace MudBlazor.UnitTests.Components
                 x.Add(c => c.MultiSelection, false);
             });
             var select = comp.FindComponent<MudSelect<string>>();
-            var input = comp.Find("div.mud-input-control");
 
             comp.Instance.ValueChangeCount.Should().Be(0);
             comp.Instance.ValuesChangeCount.Should().Be(0);
@@ -1192,13 +1190,9 @@ namespace MudBlazor.UnitTests.Components
             var comp = Context.RenderComponent<MudSelect<string>>(parameters
                 => parameters.Add(p => p.Label, "Test Label"));
 
-            var input = comp.Find("input");
-            var label = comp.Find("label");
-
-            input.Id.Should().NotBeNullOrEmpty();
-            var forAttribute = label.Attributes.GetNamedItem("for");
-            forAttribute.Should().NotBeNull();
-            forAttribute!.Value.Should().Be(input.Id);
+            comp.Find("input").Id.Should().NotBeNullOrEmpty();
+            comp.Find("label").Attributes.GetNamedItem("for").Should().NotBeNull();
+            comp.Find("label").Attributes.GetNamedItem("for")!.Value.Should().Be(comp.Find("input").Id);
         }
 
         /// <summary>
@@ -1216,13 +1210,9 @@ namespace MudBlazor.UnitTests.Components
                         { "Id", expectedId }
                     }));
 
-            var input = comp.Find("input");
-            var label = comp.Find("label");
-
-            input.Id.Should().Be(expectedId);
-            var forAttribute = label.Attributes.GetNamedItem("for");
-            forAttribute.Should().NotBeNull();
-            forAttribute!.Value.Should().Be(expectedId);
+            comp.Find("input").Id.Should().Be(expectedId);
+            comp.Find("label").Attributes.GetNamedItem("for").Should().NotBeNull();
+            comp.Find("label").Attributes.GetNamedItem("for")!.Value.Should().Be(expectedId);
         }
 
         /// <summary>
@@ -1241,13 +1231,52 @@ namespace MudBlazor.UnitTests.Components
                     })
                     .Add(p => p.InputId, expectedId));
 
-            var input = comp.Find("input");
-            var label = comp.Find("label");
+            comp.Find("input").Id.Should().Be(expectedId);
+            comp.Find("label").Attributes.GetNamedItem("for").Should().NotBeNull();
+            comp.Find("label").Attributes.GetNamedItem("for")!.Value.Should().Be(expectedId);
+        }
 
-            input.Id.Should().Be(expectedId);
-            var forAttribute = label.Attributes.GetNamedItem("for");
-            forAttribute.Should().NotBeNull();
-            forAttribute!.Value.Should().Be(expectedId);
+        /// <summary>
+        /// Optional Select should not have required attribute and aria-required should be false.
+        /// </summary>
+        [Test]
+        public void OptionalSelect_Should_NotHaveRequiredAttributeAndAriaRequiredShouldBeFalse()
+        {
+            var comp = Context.RenderComponent<MudSelect<string>>();
+
+            comp.Find("input").HasAttribute("required").Should().BeFalse();
+            comp.Find("input").GetAttribute("aria-required").Should().Be("false");
+        }
+
+        /// <summary>
+        /// Required Select should have required and aria-required attributes.
+        /// </summary>
+        [Test]
+        public void RequiredSelect_Should_HaveRequiredAndAriaRequiredAttributes()
+        {
+            var comp = Context.RenderComponent<MudSelect<string>>(parameters => parameters
+                .Add(p => p.Required, true));
+
+            comp.Find("input").HasAttribute("required").Should().BeTrue();
+            comp.Find("input").GetAttribute("aria-required").Should().Be("true");
+        }
+
+        /// <summary>
+        /// Required and aria-required Select attributes should be dynamic.
+        /// </summary>
+        [Test]
+        public void RequiredAndAriaRequiredSelectAttributes_Should_BeDynamic()
+        {
+            var comp = Context.RenderComponent<MudSelect<string>>();
+
+            comp.Find("input").HasAttribute("required").Should().BeFalse();
+            comp.Find("input").GetAttribute("aria-required").Should().Be("false");
+
+            comp.SetParametersAndRender(parameters => parameters
+                .Add(p => p.Required, true));
+
+            comp.Find("input").HasAttribute("required").Should().BeTrue();
+            comp.Find("input").GetAttribute("aria-required").Should().Be("true");
         }
     }
 }
